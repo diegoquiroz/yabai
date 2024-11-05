@@ -7,6 +7,26 @@ struct space_label
     char *label;
 };
 
+enum space_autopad_value_type
+{
+    SPACE_AUTOPAD_VALUE_FIXED_INT,
+    SPACE_AUTOPAD_VALUE_PERCENTAGE,
+};
+
+struct space_autopad
+{
+    bool enabled;
+
+    char pretty_aspect_ratio[7]; // NNN + : + MMM OR X.XXXXX
+    float min_aspect;
+
+    enum space_autopad_value_type height_type;
+    int height;
+
+    enum space_autopad_value_type width_type;
+    int width;
+};
+
 struct space_manager
 {
     struct table view;

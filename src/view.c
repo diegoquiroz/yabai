@@ -220,6 +220,17 @@ static inline bool window_node_is_right_child(struct window_node *node)
     return node->parent && node->parent->right == node;
 }
 
+static inline bool window_node_is_occluded_by_zoom(struct window_node *node)
+{
+    if (!node->parent) return false;
+
+    if (window_node_is_right_child(node) && node->parent->left->zoom == node->parent)
+      return true;
+    else if (window_node_is_left_child(node) && node->parent->right->zoom == node->parent)
+      return true;
+    return window_node_is_occluded_by_zoom(node->parent);
+}
+
 static void window_node_equalize(struct window_node *node, uint32_t axis_flag)
 {
     if (node->left)  window_node_equalize(node->left, axis_flag);
@@ -592,11 +603,20 @@ struct window_node *view_find_window_node_in_direction(struct view *view, struct
     CGPoint source_area_max = area_max_point(source->area);
 
     for (struct window_node *target = window_node_find_first_leaf(view->root); target; target = window_node_find_next_leaf(target)) {
-        if (source == target) continue;
+        // Add the check for zoom and occlusion
+        if (target->zoom == view->root) {
+            if (target != source) return target;
+            else return NULL;
+        }
+        if (source == target || window_node_is_occluded_by_zoom(target))
+            continue;
 
-        CGPoint target_area_max = area_max_point(target->area);
-        if (area_is_in_direction(&source->area, source_area_max, &target->area, target_area_max, direction)) {
-            int distance = area_distance_in_direction(&source->area, source_area_max, &target->area, target_area_max, direction);
+        // Adjust area based on zoom state
+        struct area *target_area = target->zoom ? &target->zoom->area : &target->area;
+        CGPoint target_area_max = area_max_point(*target_area);
+
+        if (area_is_in_direction(&source->area, source_area_max, target_area, target_area_max, direction)) {
+            int distance = area_distance_in_direction(&source->area, source_area_max, target_area, target_area_max, direction);
             int rank = window_manager_find_rank_of_window_in_list(target->window_order[0], window_list, window_count);
             if ((distance < best_distance) || (distance == best_distance && rank < best_rank)) {
                 best_node = target;
@@ -814,6 +834,19 @@ struct window_node *view_add_window_node_with_insertion_point(struct view *view,
 struct window_node *view_add_window_node(struct view *view, struct window *window)
 {
     return view_add_window_node_with_insertion_point(view, window, 0);
+}
+
+uint32_t view_window_count(struct view *view)
+{
+    uint32_t window_count = 0;
+
+    struct window_node *node = window_node_find_first_leaf(view->root);
+    while (node) {
+        window_count += node->window_count;
+        node = window_node_find_next_leaf(node);
+    }
+
+    return window_count;
 }
 
 uint32_t *view_find_window_list(struct view *view, int *window_count)

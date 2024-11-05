@@ -186,6 +186,17 @@ static EVENT_HANDLER(APPLICATION_LAUNCHED)
     int view_count = 0;
     struct view **view_list = ts_alloc_list(struct view *, window_count);
 
+    if (window_count == 1) {
+        struct window *window = window_list[0];
+        if (window_manager_should_manage_window(window) && !window_manager_find_managed_window(&g_window_manager, window)) {
+            if (default_origin) sid = window_space(window->id);
+            struct view* view = space_manager_tile_window_on_space_with_insertion_point(&g_space_manager, window, sid, prev_window_id);
+            window_manager_add_managed_window(&g_window_manager, window, view);
+        }
+        event_signal_push(SIGNAL_WINDOW_CREATED, window);
+        return;
+    }
+
     for (int i = 0; i < window_count; ++i) {
         struct window *window = window_list[i];
 
@@ -292,6 +303,17 @@ static EVENT_HANDLER(APPLICATION_TERMINATED)
             //
 
             view_remove_window_node(view, window);
+            if (i == window_count - 1) {
+              struct window *focused_window = window_manager_focused_window(&g_window_manager);
+              if (focused_window && focused_window->application == application) {
+                struct window *closest_window = window_manager_find_closest_managed_window_in_direction(&g_window_manager, focused_window, DIR_EAST);
+                if (!closest_window) closest_window = window_manager_find_closest_managed_window_in_direction(&g_window_manager, focused_window, DIR_WEST);
+                if (!closest_window) closest_window = window_manager_find_closest_managed_window_in_direction(&g_window_manager, focused_window, DIR_SOUTH);
+                if (!closest_window) closest_window = window_manager_find_closest_managed_window_in_direction(&g_window_manager, focused_window, DIR_NORTH);
+                if (closest_window) window_manager_focus_window_with_raise(&closest_window->application->psn, closest_window->id, closest_window->ref);
+              }
+            }
+
             window_manager_remove_managed_window(&g_window_manager, window->id);
 
             view_set_flag(view, VIEW_IS_DIRTY);
@@ -329,6 +351,8 @@ static EVENT_HANDLER(APPLICATION_TERMINATED)
 
         window_node_flush(view->root);
         view_clear_flag(view, VIEW_IS_DIRTY);
+
+        space_manager_refresh_view(&g_space_manager, view->sid);
     }
 
     if (workspace_is_macos_sequoia()) {
@@ -587,6 +611,10 @@ static EVENT_HANDLER(WINDOW_DESTROYED)
     debug("%s: %s %d\n", __FUNCTION__, window->application ? window->application->name : "<unknown>", window->id);
 
     struct view *view = window_manager_find_managed_window(&g_window_manager, window);
+    struct window *next_window = window_manager_find_natural_next_window(&g_space_manager, &g_window_manager, window);
+
+    if (next_window) window_manager_focus_window_with_raise(&next_window->application->psn, next_window->id, next_window->ref);
+
     if (view) {
         space_manager_untile_window(view, window);
         window_manager_remove_managed_window(&g_window_manager, window->id);
