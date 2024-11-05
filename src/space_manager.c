@@ -170,7 +170,7 @@ bool space_manager_auto_pad_untile_window(struct space_manager* sm, struct view*
     return false;
 }
 
-void space_manager_untile_window(struct view *view, struct window *window)
+void space_manager_untile_window(struct space_manager *sm, struct view *view, struct window *window)
 {
     if (view->layout == VIEW_FLOAT) return;
 
