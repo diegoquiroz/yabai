@@ -1,3 +1,12 @@
+void space_manager_set_autopad(struct space_manager* sm, bool enabled);
+void space_manager_set_autopad_width(struct space_manager* sm, enum space_autopad_value_type new_type, int new_width);
+void space_manager_set_autopad_height(struct space_manager* sm, enum space_autopad_value_type new_type, int new_height);
+void space_manager_set_autopad_min_aspect(struct space_manager* sm, float aspect_numerator, int aspect_denominator);
+bool space_manager_autopad_view(struct space_manager* sm, struct view* view, uint32_t window_count, bool update);
+bool space_manager_reset_view_paddings(struct space_manager* sm, struct view* view);
+int space_manager_autopad_height(struct space_manager* sm, CGSize* view_size);
+
+
 static struct {
     int sockfd;
     bool is_running;

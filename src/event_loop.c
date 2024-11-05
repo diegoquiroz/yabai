@@ -616,7 +616,7 @@ static EVENT_HANDLER(WINDOW_DESTROYED)
     if (next_window) window_manager_focus_window_with_raise(&next_window->application->psn, next_window->id, next_window->ref);
 
     if (view) {
-        space_manager_untile_window(view, window);
+        space_manager_untile_window(&g_space_manager, view, window);
         window_manager_remove_managed_window(&g_window_manager, window->id);
     }
 
@@ -775,7 +775,7 @@ static EVENT_HANDLER(WINDOW_RESIZED)
     if (!was_fullscreen && is_fullscreen) {
         struct view *view = window_manager_find_managed_window(&g_window_manager, window);
         if (view) {
-            space_manager_untile_window(view, window);
+            space_manager_untile_window(&g_space_manager, view, window);
             window_manager_remove_managed_window(&g_window_manager, window->id);
             window_manager_purify_window(&g_window_manager, window);
         }
@@ -855,7 +855,7 @@ static EVENT_HANDLER(WINDOW_MINIMIZED)
 
     struct view *view = window_manager_find_managed_window(&g_window_manager, window);
     if (view) {
-        space_manager_untile_window(view, window);
+        space_manager_untile_window(&g_space_manager, view, window);
         window_manager_remove_managed_window(&g_window_manager, window->id);
         window_manager_purify_window(&g_window_manager, window);
     }
@@ -1189,7 +1189,7 @@ static EVENT_HANDLER(MOUSE_UP)
             enum mouse_drop_action drop_action = mouse_determine_drop_action(&g_mouse_state, a_node, window, point);
             switch (drop_action) {
             case MOUSE_DROP_ACTION_STACK: {
-                mouse_drop_action_stack(&g_window_manager, src_view, g_mouse_state.window, dst_view, window);
+                mouse_drop_action_stack(&g_window_manager, src_view, g_mouse_state.window, dst_view, window, &g_space_manager);
             } break;
             case MOUSE_DROP_ACTION_SWAP: {
                 mouse_drop_action_swap(&g_window_manager, src_view, a_node, g_mouse_state.window, dst_view, b_node, window);

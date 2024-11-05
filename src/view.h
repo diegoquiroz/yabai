@@ -213,6 +213,7 @@ struct view
     int window_gap;
     uint32_t auto_balance;
     uint64_t flags;
+    bool is_dirty;
 };
 
 #define view_check_flag(v, x) ((v)->flags  &  (x))
